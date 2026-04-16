@@ -1,0 +1,17 @@
+## Interface: 120000
+## Interface-Retail: 120000
+## Title: Blastlist
+## Notes: M+ blacklist addon — tracks by GUID, detects premade clusters, auto-rejects LFG applicants
+## Author: GitBot_Echo (Toast)
+## Version: 1.0.0
+## SavedVariables: BlastListDB
+
+## LoadOnDemand: 0
+
+Libs/LibStub/LibStub.lua
+Libs/LibDeflate/LibDeflate.lua
+Libs/LibSerialize/LibSerialize.lua
+
+BlastlistDB.lua
+Blastlist.lua
+BlastlistUI.lua
