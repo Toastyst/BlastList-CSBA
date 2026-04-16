@@ -18,6 +18,7 @@ local DEFAULTS = {
         aggressiveMode  = true, -- auto-blast guild/simultaneous associates
         clusterWindowMs = 100,  -- milliseconds window for premade fingerprint
     },
+    minimapIcon = { hide = false },
 }
 
 -- ---------------------------------------------------------------------------

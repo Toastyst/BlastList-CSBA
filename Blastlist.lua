@@ -261,7 +261,6 @@ Frame:SetScript("OnEvent", function(self, event, ...)
         if name == ADDON_NAME then
             BlastlistDB.Init()
             Blastlist.InitUI()   -- defined in BlastlistUI.lua
-            Blastlist.Print("Loaded. |cff888888/blast for commands.|r")
         end
 
     elseif event == "GROUP_ROSTER_UPDATE" then

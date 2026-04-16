@@ -5,6 +5,7 @@
 ## Author: GitBot_Echo (Toast)
 ## Version: 1.0.0
 ## SavedVariables: BlastListDB
+## OptionalDeps: LibStub, LibDataBroker-1.1, LibDBIcon-1.0
 
 ## LoadOnDemand: 0
 

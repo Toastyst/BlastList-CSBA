@@ -10,14 +10,91 @@ Blastlist = Blastlist or {}
 
 local ADDON_COLOR = "|cff00aaff"   -- blue brand prefix for all print output
 
+function Blastlist.Print(msg)
+    print(ADDON_COLOR .. "[Blastlist]|r " .. msg)
+end
+-- Minimap button
+-- Uses Blizzard's default minimap button approach — circular, draggable.
+-------------------------------------------------------------------------------
+local minimapButton
+
+local function CreateMinimapButton()
+    minimapButton = CreateFrame("Button", "BlastlistMinimapButton", Minimap)
+    minimapButton:SetSize(32, 32)
+    minimapButton:SetFrameStrata("MEDIUM")
+    minimapButton:SetFrameLevel(8)
+    minimapButton:SetMovable(true)
+    minimapButton:RegisterForDrag("LeftButton")
+
+    -- Icon (separate child texture for proper circular cropping)
+    local icon = minimapButton:CreateTexture(nil, "BACKGROUND")
+    icon:SetTexture("Interface\\Icons\\ability_warrior_bladestorm")
+    icon:SetSize(24, 24)
+    icon:SetPoint("CENTER")
+    icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+
+    local pushedIcon = minimapButton:CreateTexture(nil, "BACKGROUND")
+    pushedIcon:SetTexture("Interface\\Icons\\ability_warrior_bladestorm")
+    pushedIcon:SetSize(24, 24)
+    pushedIcon:SetPoint("CENTER")
+    pushedIcon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+    pushedIcon:SetAlpha(0.7)  -- Slightly dimmed for pushed state
+
+    minimapButton:SetNormalTexture(icon)
+    minimapButton:SetPushedTexture(pushedIcon)
+
+    -- Custom circular highlight
+    local highlight = minimapButton:CreateTexture(nil, "HIGHLIGHT")
+    highlight:SetColorTexture(1, 1, 1, 0.3)
+    highlight:SetSize(32, 32)
+    highlight:SetPoint("CENTER")
+    minimapButton:SetHighlightTexture(highlight)
+
+    -- Circular border (the ring around the icon)
+    local overlay = minimapButton:CreateTexture(nil, "OVERLAY")
+    overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+    overlay:SetSize(56, 56)
+    overlay:SetPoint("CENTER", 0, 0)
+
+    -- Drag support
+    minimapButton:SetScript("OnDragStart", function(self) self:StartMoving() end)
+    minimapButton:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+    end)
+
+    -- Click (left click = quick status)
+    minimapButton:SetScript("OnClick", function(self, btn)
+        if btn == "LeftButton" then
+            Blastlist.Print(string.format(
+                "Blastlist active — |cffff4444%d|r entries. /blast for commands.",
+                BlastlistDB.Count()))
+        end
+    end)
+
+    -- Tooltip
+    minimapButton:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        GameTooltip:AddLine("Blastlist", 0, 0.67, 1)
+        GameTooltip:AddLine(string.format("%d blacklisted players", BlastlistDB.Count()), 1, 1, 1)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("|cffaaaaaaLeft-click|r — quick status")
+        GameTooltip:AddLine("|cffaaaaaa/blast|r — blast current target")
+        GameTooltip:Show()
+    end)
+
+    minimapButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    -- Starting position
+    local angle = 225
+    local radius = 80
+    local rad = math.rad(angle)
+    minimapButton:SetPoint("CENTER", Minimap, "CENTER",
+        radius * math.cos(rad), radius * math.sin(rad))
+end
+
 -------------------------------------------------------------------------------
 -- Blastlist.Print(msg)
 -- Prefixed chat output. Used everywhere in the addon.
--------------------------------------------------------------------------------
-function Blastlist.Print(msg)
-    print(ADDON_COLOR .. "[Blastlist]|r " .. tostring(msg))
-end
-
 -------------------------------------------------------------------------------
 -- Confirm popup — shown before a blast executes
 -- Reuses Blizzard's StaticPopup infrastructure so we need zero custom frames.
@@ -138,79 +215,7 @@ local function ShowExportPopup(encoded)
     if popup then popup.data = encoded end
 end
 
--------------------------------------------------------------------------------
--- Minimap button
--- Uses Blizzard's default minimap button approach — circular, draggable.
--------------------------------------------------------------------------------
-local minimapButton
 
-local function CreateMinimapButton()
-    minimapButton = CreateFrame("Button", "BlastlistMinimapButton", Minimap)
-    minimapButton:SetSize(32, 32)
-    minimapButton:SetFrameStrata("MEDIUM")
-    minimapButton:SetFrameLevel(8)
-    minimapButton:SetMovable(true)
-    minimapButton:RegisterForDrag("LeftButton")
-
-    -- Icon (separate child texture for proper circular cropping)
-    local icon = minimapButton:CreateTexture(nil, "ARTWORK")
-    icon:SetTexture("Interface\\Icons\\ability_warrior_bladestorm")
-    icon:SetSize(20, 20)  -- Slightly smaller than button for clean circle
-    icon:SetPoint("CENTER", minimapButton, "CENTER", 0, 0)
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)  -- Crop to circle
-
-    local pushedIcon = minimapButton:CreateTexture(nil, "ARTWORK")
-    pushedIcon:SetTexture("Interface\\Icons\\ability_warrior_bladestorm")
-    pushedIcon:SetSize(20, 20)
-    pushedIcon:SetPoint("CENTER", minimapButton, "CENTER", 0, 0)
-    pushedIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    pushedIcon:SetAlpha(0.7)  -- Slightly dimmed for pushed state
-
-    minimapButton:SetNormalTexture(icon)
-    minimapButton:SetPushedTexture(pushedIcon)
-    minimapButton:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
-
-    -- Circular border (the ring around the icon)
-    local overlay = minimapButton:CreateTexture(nil, "OVERLAY")
-    overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-    overlay:SetSize(56, 56)
-    overlay:SetPoint("CENTER", 0, 0)
-
-    -- Drag support
-    minimapButton:SetScript("OnDragStart", function(self) self:StartMoving() end)
-    minimapButton:SetScript("OnDragStop", function(self) 
-        self:StopMovingOrSizing() 
-    end)
-
-    -- Click (left click = quick status)
-    minimapButton:SetScript("OnClick", function(self, btn)
-        if btn == "LeftButton" then
-            Blastlist.Print(string.format(
-                "Blastlist active — |cffff4444%d|r entries. /blast for commands.",
-                BlastlistDB.Count()))
-        end
-    end)
-
-    -- Tooltip
-    minimapButton:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-        GameTooltip:AddLine("Blastlist", 0, 0.67, 1)
-        GameTooltip:AddLine(string.format("%d blacklisted players", BlastlistDB.Count()), 1, 1, 1)
-        GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("|cffaaaaaaLeft-click|r — quick status")
-        GameTooltip:AddLine("|cffaaaaaa/blast|r — blast current target")
-        GameTooltip:Show()
-    end)
-
-    minimapButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
-
-    -- Starting position
-    local angle = 225
-    local radius = 80
-    local rad = math.rad(angle)
-    minimapButton:SetPoint("CENTER", Minimap, "CENTER",
-        radius * math.cos(rad), radius * math.sin(rad))
-end
 
 -------------------------------------------------------------------------------
 -- Slash command router
@@ -341,4 +346,6 @@ function Blastlist.InitUI()
     SLASH_BLAST1 = "/blast"
     SlashCmdList["BLAST"] = HandleBlast
     print("|cffff0000[DEBUG] Slash command /blast successfully registered|r")
+
+    Blastlist.Print("Loaded. |cff888888/blast for commands.|r")
 end
